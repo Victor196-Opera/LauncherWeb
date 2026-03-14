@@ -2,26 +2,285 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Web Của Tôi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Android Launcher mô phỏng</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            background: #121212; /* màu nền tối như nhiều launcher Android */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .launcher-container {
+            max-width: 480px;
+            width: 100%;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(4px);
+            border-radius: 36px 36px 24px 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(80, 80, 80, 0.3) inset;
+            padding: 24px 16px 32px 16px;
+            border: 1px solid #3a3a3a;
+        }
+
+        /* Thanh tìm kiếm / Google Assistant giả */
+        .search-bar {
+            background: #242424;
+            border-radius: 30px;
+            padding: 12px 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #3e3e3e;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        .search-icon {
+            color: #9b9b9b;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .search-bar span {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 400;
+            opacity: 0.8;
+            flex: 1;
+        }
+
+        .mic-icon {
+            color: #bbbbbb;
+            font-size: 20px;
+        }
+
+        /* Lưới ứng dụng */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px 16px;
+            justify-items: center;
+            align-items: start;
+            margin-bottom: 36px;
+        }
+
+        /* Mỗi mục ứng dụng */
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.15s ease, filter 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-item:active {
+            transform: scale(0.94);
+            filter: brightness(1.2);
+        }
+
+        .app-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 8px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset;
+            margin-bottom: 10px;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        /* Màu sắc biểu tượng gần giống thương hiệu */
+        .app-item[data-package="com.android.vending"] .app-icon { background: linear-gradient(145deg, #3d9c5c, #1e7b3e); } /* Play Store */
+        .app-item[data-package="com.android.settings"] .app-icon { background: linear-gradient(145deg, #5f5f5f, #3e3e3e); } /* Settings */
+        .app-item[data-package="com.google.android.youtube"] .app-icon { background: linear-gradient(145deg, #ff4e4e, #c21818); } /* YouTube */
+        .app-item[data-package="com.android.dialer"] .app-icon { background: linear-gradient(145deg, #1e8f5c, #0d5e3a); } /* Điện thoại (xanh Dialer) */
+        .app-item[data-package="com.android.messaging"] .app-icon { background: linear-gradient(145deg, #2979ff, #0a4baf); } /* Nhắn tin */
+        .app-item[data-package="com.android.launcher3"] .app-icon { background: linear-gradient(145deg, #9b64c0, #673f8b); } /* Launcher3 tím */
+
+        .app-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #f0f0f0;
             text-align: center;
-            padding: 50px;
-            background-color: #f0f0f0;
+            max-width: 80px;
+            line-height: 1.3;
+            text-shadow: 0 2px 3px black;
+            letter-spacing: 0.2px;
         }
-        h1 {
-            color: #333;
+
+        /* Thanh dock giả (hotseat) */
+        .dock {
+            margin-top: 8px;
+            border-top: 1px solid #3a3a3a;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
         }
-        p {
-            color: #666;
+
+        .dock-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: #232323;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: white;
+            box-shadow: 0 6px 8px rgba(0,0,0,0.6);
+            border: 1px solid #3f3f3f;
+            cursor: pointer;
+            transition: 0.1s ease;
         }
+
+        .dock-icon:active {
+            transform: scale(0.92);
+            background: #2d2d2d;
+        }
+
+        /* thanh điều hướng (navigation bar) giả */
+        .nav-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 24px;
+            color: #b0b0b0;
+            font-size: 20px;
+            padding: 0 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 12px;
+            color: #9e9e9e;
+        }
+
+        /* thông báo tooltip nếu muốn nhưng không cần */
+
+        /* package ẩn trong data attribute để dùng JS */
     </style>
 </head>
 <body>
-    <h1>Xin chào thế giới!</h1>
-    <p>Đây là trang web miễn phí đầu tiên của tôi.</p>
-    <p>Host bởi GitHub Pages.</p>
+<div class="launcher-container">
+    <!-- Thanh tìm kiếm (chỉ để trang trí) -->
+    <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <span>Tìm kiếm ứng dụng...</span>
+        <span class="mic-icon">🎤</span>
+    </div>
+
+    <!-- Danh sách ứng dụng chính -->
+    <div class="apps-grid" id="appsGrid">
+        <!-- Play Store -->
+        <div class="app-item" data-package="com.android.vending">
+            <div class="app-icon">🛒</div>
+            <span class="app-name">Play Store</span>
+        </div>
+        <!-- Settings -->
+        <div class="app-item" data-package="com.android.settings">
+            <div class="app-icon">⚙️</div>
+            <span class="app-name">Settings</span>
+        </div>
+        <!-- YouTube -->
+        <div class="app-item" data-package="com.google.android.youtube">
+            <div class="app-icon">▶️</div>
+            <span class="app-name">YouTube</span>
+        </div>
+        <!-- Điện thoại (Dialer) -->
+        <div class="app-item" data-package="com.android.dialer">
+            <div class="app-icon">📞</div>
+            <span class="app-name">Điện thoại</span>
+        </div>
+        <!-- Nhắn tin -->
+        <div class="app-item" data-package="com.android.messaging">
+            <div class="app-icon">💬</div>
+            <span class="app-name">Nhắn tin</span>
+        </div>
+        <!-- Launcher3 (Quickstep) -->
+        <div class="app-item" data-package="com.android.launcher3">
+            <div class="app-icon">🏠</div>
+            <span class="app-name">Launcher3</span>
+        </div>
+    </div>
+
+    <!-- Dock (hotseat) thường có vài app, để thêm giống launcher -->
+    <div class="dock">
+        <div class="dock-icon" data-package="com.android.dialer" title="Điện thoại">📞</div>
+        <div class="dock-icon" data-package="com.android.messaging" title="Nhắn tin">💬</div>
+        <div class="dock-icon" data-package="com.android.vending" title="Play Store">🛒</div>
+        <div class="dock-icon" data-package="com.google.android.youtube" title="YouTube">▶️</div>
+    </div>
+
+    <!-- Thanh điều hướng giả (chỉ để trang trí) -->
+    <div class="nav-bar">
+        <div class="nav-item">◀</div>
+        <div class="nav-item">●</div>
+        <div class="nav-item">◻</div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Hàm xử lý mở liên kết tới Google Play với package name
+        function openPlayStoreLink(packageName) {
+            // Ưu tiên mở bằng intent nếu có thể (trên thiết bị Android)
+            // Nhưng trên web, chúng ta mở link trực tiếp đến CH Play
+            const playStoreUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
+            window.open(playStoreUrl, '_blank');  // Mở tab mới
+        }
+
+        // Gán sự kiện click cho tất cả phần tử .app-item
+        const appItems = document.querySelectorAll('.app-item');
+        appItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                const pkg = this.getAttribute('data-package');
+                if (pkg) {
+                    openPlayStoreLink(pkg);
+                }
+            });
+        });
+
+        // Gán sự kiện cho các icon trong dock (nếu có data-package)
+        const dockIcons = document.querySelectorAll('.dock-icon');
+        dockIcons.forEach(icon => {
+            icon.addEventListener('click', function(e) {
+                const pkg = this.getAttribute('data-package');
+                if (pkg) {
+                    openPlayStoreLink(pkg);
+                }
+            });
+        });
+
+        // Thêm hiệu ứng khi nhấn giống launcher (đã có CSS active)
+        // Ngoài ra có thể thêm thông báo nhưng không cần thiết
+        console.log('Launcher đã sẵn sàng! Các package: com.android.vending, com.android.settings,...');
+    })();
+</script>
+
+<!-- Ghi chú: các package được cung cấp dùng để tạo link trực tiếp đến Google Play -->
+<!-- Nếu bạn muốn mở ứng dụng trực tiếp trên điện thoại Android (deep link), có thể thử intent: 
+     window.location.href = 'intent://details?id=' + pkg + '#Intent;scheme=market;action=android.intent.action.VIEW;end'; 
+     Nhưng đa số trình duyệt web trên máy tính sẽ không xử lý được intent. Nên dùng link play.google.com an toàn nhất.
+-->
 </body>
 </html>
